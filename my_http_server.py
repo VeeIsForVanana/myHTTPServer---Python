@@ -68,8 +68,8 @@ def request_resolver(request: RequestData) -> ResponseData:
     # handle the method type
     match request.method:
         case "GET":
-            index = open("index.html", encoding="utf-8").read()
-            return ResponseData(request.version, 200, "OK", index)
+            payload = open(route_resolver(request.route), encoding="utf-8").read()
+            return ResponseData(request.version, 200, "OK", payload)
 
         case _:
             return ResponseData(request.version, 405, "Method Not Allowed", None)
@@ -154,4 +154,8 @@ if __name__ == "__main__":
                     response_data = request_resolver(request_data)
                 except AssertionError:
                     response_data = ResponseData("HTTP/1.1", 400, "Bad Request", None)
+                except HTTPError as err:
+                    response_data = ResponseData(
+                        "HTTP/1.1", err.statusCode, err.statusText, None
+                    )
                 conn.sendall(response_builder(response_data))
