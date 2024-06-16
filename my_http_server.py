@@ -85,8 +85,8 @@ def route_resolver(path: str) -> str:
         str: _description_
     """
 
-    # split the path by slashes
-    path_steps = path.split("/")
+    # split the path by slashes, not including the initial blank path step and catching the "/" case
+    path_steps = path.split("/")[1:] if path != "/" else []
 
     # retrieve the dictionary containing all routings
     with open("address-resolver.json", encoding="utf-8") as router:
@@ -98,7 +98,6 @@ def route_resolver(path: str) -> str:
 
         # otherwise, recursively dive into the router
         def find_route(curr_router: Router, path_steps: list[str]) -> Router | str:
-            print(path_steps)
             if len(path_steps) <= 1:
                 return curr_router[path_steps[0]]
 
