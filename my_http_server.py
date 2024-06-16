@@ -27,7 +27,7 @@ class ResponseData:
 @dataclass
 class HTTPError(Exception):
     statusCode: int
-    statusText: int
+    statusText: str
 
 
 def request_parser(request: bytes) -> RequestData:
@@ -98,13 +98,27 @@ def route_resolver(path: str) -> str:
 
         # otherwise, recursively dive into the router
         def find_route(curr_router: Router, path_steps: list[str]) -> Router | str:
-            if len(path_steps) == 1:
+            print(path_steps)
+            if len(path_steps) <= 1:
                 return curr_router[path_steps[0]]
 
             # if we find an ending for the route when we do not expect it (path has not been fully consumed, raise an error)
             if isinstance(new_router := curr_router[path_steps[0]], str):
                 raise KeyError
             return find_route(new_router, path_steps[1:])
+
+        try:
+            route = find_route(route_dict, path_steps)
+        except KeyError as exc:
+            raise HTTPError(404, "Not Found") from exc
+
+        if isinstance(route, dict):
+            # if we find that the returned route is another dict, ensure that there is an index
+            if isinstance(index := route["index"], str):
+                return index
+            raise HTTPError(404, "Not Found")
+
+        return route
 
 
 def response_builder(response: ResponseData) -> bytes:
