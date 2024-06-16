@@ -6,6 +6,8 @@ import json
 HOST = "127.0.0.1"
 PORT = randint(1023, 6900)
 
+type Router = dict[str, Router | str]
+
 
 @dataclass
 class RequestData:
@@ -20,6 +22,12 @@ class ResponseData:
     statusCode: int
     statusText: str
     payload: str | None
+
+
+@dataclass
+class HTTPError(Exception):
+    statusCode: int
+    statusText: int
 
 
 def request_parser(request: bytes) -> RequestData:
@@ -77,9 +85,26 @@ def route_resolver(path: str) -> str:
         str: _description_
     """
 
+    # split the path by slashes
+    path_steps = path.split("/")
+
     # retrieve the dictionary containing all routings
-    with open("address-resolver.json") as router:
+    with open("address-resolver.json", encoding="utf-8") as router:
         route_dict = json.load(router)
+
+        # handle the case for the root route
+        if len(path_steps) == 0:
+            return route_dict["index"]
+
+        # otherwise, recursively dive into the router
+        def find_route(curr_router: Router, path_steps: list[str]) -> Router | str:
+            if len(path_steps) == 1:
+                return curr_router[path_steps[0]]
+
+            # if we find an ending for the route when we do not expect it (path has not been fully consumed, raise an error)
+            if isinstance(new_router := curr_router[path_steps[0]], str):
+                raise KeyError
+            return find_route(new_router, path_steps[1:])
 
 
 def response_builder(response: ResponseData) -> bytes:
