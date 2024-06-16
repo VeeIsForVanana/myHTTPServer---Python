@@ -1,6 +1,7 @@
 from random import randint
 import socket
 from attr import dataclass
+import json
 
 HOST = "127.0.0.1"
 PORT = randint(1023, 6900)
@@ -64,6 +65,21 @@ def request_resolver(request: RequestData) -> ResponseData:
 
         case _:
             return ResponseData(request.version, 405, "Method Not Allowed", None)
+
+
+def route_resolver(path: str) -> str:
+    """takes an HTTP 'path' and resolves it into an actual filepath
+
+    Args:
+        path (str): _description_
+
+    Returns:
+        str: _description_
+    """
+
+    # retrieve the dictionary containing all routings
+    with open("address-resolver.json") as router:
+        route_dict = json.load(router)
 
 
 def response_builder(response: ResponseData) -> bytes:
