@@ -153,9 +153,14 @@ if __name__ == "__main__":
                     request_data = request_parser(data)
                     response_data = request_resolver(request_data)
                 except AssertionError:
-                    response_data = ResponseData("HTTP/1.1", 400, "Bad Request", None)
+                    response_data = ResponseData(
+                        "HTTP/1.1", 400, "Bad Request", "400 Bad Request"
+                    )
                 except HTTPError as err:
                     response_data = ResponseData(
-                        "HTTP/1.1", err.statusCode, err.statusText, None
+                        "HTTP/1.1",
+                        err.statusCode,
+                        err.statusText,
+                        f"{err.statusCode} {err.statusText}",
                     )
                 conn.sendall(response_builder(response_data))
