@@ -184,7 +184,11 @@ if __name__ == "__main__":
         while True:
             events = sel.select(timeout=None)
             for key, mask in events:
+
+                # if the connection is new, accept and register the connection
                 if not key.data:
-                    accept_conn(key.fileobj)
+                    accept_conn(key.fileobj)  # type: ignore
+
+                # if the connection is not new, process it
                 else:
                     service_conn(key, mask)
