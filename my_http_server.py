@@ -1,10 +1,7 @@
 import socket
 import selectors
-import types
 from attr import dataclass
 import json
-
-from sympy import false
 
 HOST = "127.0.0.1"
 PORT = 0
