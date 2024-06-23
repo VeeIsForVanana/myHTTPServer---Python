@@ -1,6 +1,6 @@
 # Welcome to myHTTPServer-Python
 
-This is an experimental HTTP Server project by me written in Python for the funzies. The main goal of this project is for me to better understand the Hypertext Transfer Protocol (HTTP). It's been said that one great way to learn a language is to code an HTTP server in it, but for me, before I could do that I thought it'd be nice to write learn HTTP servers by coding in a language that I knew quite well. Hence, Python.
+This is an experimental HTTP Server project by me written in Python for the funzies. The main goal of this project is for me to better understand the HyperText Transfer Protocol (HTTP). It's been said that one great way to learn a language is to code an HTTP server in it, but for me, before I could do that I thought it'd be nice to write learn HTTP servers by coding in a language that I knew quite well. Hence, Python.
 
 ## Objectives
 
