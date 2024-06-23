@@ -150,15 +150,18 @@ def service_conn(service_key: selectors.SelectorKey, event_mask):  # type: ignor
     data: SocketData = service_key.data
     if event_mask & selectors.EVENT_READ:
         read_data = conn.recv(4096)
-        print(read_data)
-        response_data: ResponseData
         if not read_data:
             print(f"Closing connection to {data.addr}")
             sel.unregister(conn)
             conn.close()
             return
+        data.inb += read_data
+
+        # if the last bytes of inbound data are not valid terminators for HTTP, return and keep reading
+        if data.inb[-4:] != b"\r\n\r\n":
+            return
         try:
-            request_data = request_parser(read_data)
+            request_data = request_parser(data.inb)
             response_data = request_resolver(request_data)
         except AssertionError:
             response_data = ResponseData(
@@ -172,6 +175,7 @@ def service_conn(service_key: selectors.SelectorKey, event_mask):  # type: ignor
                 f"{err.statusCode} {err.statusText}",
             )
         data.outb += response_builder(response_data)
+        data.inb = b""
     if event_mask & selectors.EVENT_WRITE:
         conn.sendall(data.outb)
         data.outb = b""
