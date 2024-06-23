@@ -1,5 +1,6 @@
 import socket
 import selectors
+import types
 from attr import dataclass
 import json
 
@@ -139,6 +140,40 @@ def response_builder(response: ResponseData) -> bytes:
     return response_string.encode()
 
 
+def service_conn():
+    conn, addr = s.accept()
+    with conn:
+        print(f"Serving requests from {addr}")
+        data = conn.recv(1024)
+        print(data)
+        response_data: ResponseData
+        if not data:
+            return
+        try:
+            request_data = request_parser(data)
+            response_data = request_resolver(request_data)
+        except AssertionError:
+            response_data = ResponseData(
+                "HTTP/1.1", 400, "Bad Request", "400 Bad Request"
+            )
+        except HTTPError as err:
+            response_data = ResponseData(
+                "HTTP/1.1",
+                err.statusCode,
+                err.statusText,
+                f"{err.statusCode} {err.statusText}",
+            )
+        conn.sendall(response_builder(response_data))
+
+
+def accept_conn(sock: socket.socket):
+    conn, addr = sock.accept()
+    print(f"New connection opened for {addr}")
+    conn.setblocking(false)
+    data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
+    sel.register()
+
+
 if __name__ == "__main__":
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
@@ -147,26 +182,9 @@ if __name__ == "__main__":
         s.setblocking(false)
         sel.register(s, selectors.EVENT_READ, data=None)
         while True:
-            conn, addr = s.accept()
-            with conn:
-                print(f"Serving requests from {addr}")
-                data = conn.recv(1024)
-                print(data)
-                response_data: ResponseData
-                if not data:
-                    break
-                try:
-                    request_data = request_parser(data)
-                    response_data = request_resolver(request_data)
-                except AssertionError:
-                    response_data = ResponseData(
-                        "HTTP/1.1", 400, "Bad Request", "400 Bad Request"
-                    )
-                except HTTPError as err:
-                    response_data = ResponseData(
-                        "HTTP/1.1",
-                        err.statusCode,
-                        err.statusText,
-                        f"{err.statusCode} {err.statusText}",
-                    )
-                conn.sendall(response_builder(response_data))
+            events = sel.select(timeout=None)
+            for key, mask in events:
+                if not key.data:
+                    accept_conn(key.fileobj)
+                else:
+                    service_conn(key, mask)
