@@ -8,6 +8,8 @@ from sympy import false
 HOST = "127.0.0.1"
 PORT = 0
 
+sel = selectors.DefaultSelector()
+
 type Router = dict[str, Router | str]
 
 
@@ -138,7 +140,6 @@ def response_builder(response: ResponseData) -> bytes:
 
 
 if __name__ == "__main__":
-    sel = selectors.DefaultSelector()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
         print(f"Launching with {s.getsockname()}")
