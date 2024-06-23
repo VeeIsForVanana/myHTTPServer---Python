@@ -4,7 +4,7 @@ from attr import dataclass
 import json
 
 HOST = "127.0.0.1"
-PORT = randint(1023, 6900)
+PORT = 0
 
 type Router = dict[str, Router | str]
 
@@ -136,9 +136,9 @@ def response_builder(response: ResponseData) -> bytes:
 
 
 if __name__ == "__main__":
-    print(f"Launching with {PORT}")
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
+        print(f"Launching with {s.getsockname()}")
         s.listen()
         while True:
             conn, addr = s.accept()
