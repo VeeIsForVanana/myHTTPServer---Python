@@ -171,7 +171,7 @@ def accept_conn(sock: socket.socket):
     print(f"New connection opened for {addr}")
     conn.setblocking(false)
     data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
-    sel.register()
+    sel.register(conn, selectors.EVENT_WRITE | selectors.EVENT_READ, data=data)
 
 
 if __name__ == "__main__":
