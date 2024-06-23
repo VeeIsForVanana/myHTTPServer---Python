@@ -1,7 +1,9 @@
-from random import randint
 import socket
+import selectors
 from attr import dataclass
 import json
+
+from sympy import false
 
 HOST = "127.0.0.1"
 PORT = 0
@@ -136,10 +138,13 @@ def response_builder(response: ResponseData) -> bytes:
 
 
 if __name__ == "__main__":
+    sel = selectors.DefaultSelector()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind((HOST, PORT))
         print(f"Launching with {s.getsockname()}")
         s.listen()
+        s.setblocking(false)
+        sel.register(s, selectors.EVENT_READ, data=None)
         while True:
             conn, addr = s.accept()
             with conn:
