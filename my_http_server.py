@@ -32,6 +32,13 @@ class HTTPError(Exception):
     statusText: str
 
 
+@dataclass
+class SocketData:
+    addr: str
+    inb: bytes
+    outb: bytes
+
+
 def request_parser(request: bytes) -> RequestData:
     """takes the raw bytes of a request and parses it into a data object
 
@@ -47,6 +54,7 @@ def request_parser(request: bytes) -> RequestData:
     request_lines = request_str.split("\r\n")
 
     assert len(request_lines) > 0
+    print(request_lines)
 
     # read the first line to determine method, path, and version
 
@@ -137,17 +145,20 @@ def response_builder(response: ResponseData) -> bytes:
     return response_string.encode()
 
 
-def service_conn():
-    conn, addr = s.accept()
-    with conn:
-        print(f"Serving requests from {addr}")
-        data = conn.recv(1024)
-        print(data)
+def service_conn(service_key: selectors.SelectorKey, event_mask):  # type: ignore
+    conn: socket.socket = service_key.fileobj  # type: ignore
+    data: SocketData = service_key.data
+    if event_mask & selectors.EVENT_READ:
+        read_data = conn.recv(4096)
+        print(read_data)
         response_data: ResponseData
-        if not data:
+        if not read_data:
+            print(f"Closing connection to {data.addr}")
+            sel.unregister(conn)
+            conn.close()
             return
         try:
-            request_data = request_parser(data)
+            request_data = request_parser(read_data)
             response_data = request_resolver(request_data)
         except AssertionError:
             response_data = ResponseData(
@@ -160,14 +171,17 @@ def service_conn():
                 err.statusText,
                 f"{err.statusCode} {err.statusText}",
             )
-        conn.sendall(response_builder(response_data))
+        data.outb += response_builder(response_data)
+    if event_mask & selectors.EVENT_WRITE:
+        conn.sendall(data.outb)
+        data.outb = b""
 
 
 def accept_conn(sock: socket.socket):
     conn, addr = sock.accept()
     print(f"New connection opened for {addr}")
-    conn.setblocking(false)
-    data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
+    conn.setblocking(False)
+    data = SocketData(addr, b"", b"")
     sel.register(conn, selectors.EVENT_WRITE | selectors.EVENT_READ, data=data)
 
 
@@ -176,7 +190,7 @@ if __name__ == "__main__":
         s.bind((HOST, PORT))
         print(f"Launching with {s.getsockname()}")
         s.listen()
-        s.setblocking(false)
+        s.setblocking(False)
         sel.register(s, selectors.EVENT_READ, data=None)
         while True:
             events = sel.select(timeout=None)
